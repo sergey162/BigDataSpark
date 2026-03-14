@@ -1,0 +1,48 @@
+version: '3.8'
+
+networks:
+  spark-net:
+    driver: bridge
+
+services:
+  postgres_db:
+    image: postgres:15
+    container_name: spark_postgres
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: adminpassword
+      POSTGRES_DB: petshop_db
+    ports:
+      - "5432:5432"
+    networks:
+      - spark-net
+
+  clickhouse_db:
+    image: clickhouse/clickhouse-server:latest
+    container_name: spark-clickhouse
+    environment:
+      CLICKHOUSE_DB: reports_db
+      CLICKHOUSE_USER: admin
+      CLICKHOUSE_PASSWORD: adminpassword
+    ports:
+      - "8123:8123"
+      - "9000:9000"
+    networks:
+      - spark-net
+
+  spark_env:
+    image: jupyter/pyspark-notebook:latest
+    container_name: spark_master
+    user: root
+    environment:
+      GRANT_SUDO: "yes"
+    ports:
+      - "8888:8888"
+      - "4040:4040"
+    volumes:
+      - ./:/home/jovyan/work
+    depends_on:
+      - postgres_db
+      - clickhouse_db
+    networks:
+      - spark-net
